@@ -25,7 +25,6 @@ __author__ = 'Steve Challis'
 import re
 import sys
 import logging
-from collections import defaultdict
 from gettext import gettext as _
 from optparse import OptionParser, make_option
 
@@ -77,6 +76,8 @@ class Main(object):
         return options
 
     def write_to_file(self, outfile, matches):
+        """Write the `matches` list to `outfile` path"""
+
         try:
             with open(outfile, 'w') as output:
                 output.write('\n'.join(matches))
@@ -116,7 +117,6 @@ class Main(object):
     def read_from_url(self, url):
         """Read, parse and return any found emails from `url`"""
 
-        # TODO: cleanup url (add slashes, protocol)
         try:
             root = parse(url).getroot()
         except IOError:
@@ -142,7 +142,6 @@ class Main(object):
             LOGGER.error(_('Unable to read file'))
             sys.exit(1)
 
-
         return matches
 
     def run(self):
@@ -165,6 +164,6 @@ class Main(object):
 
 
 if __name__ == '__main__':
-    p = Main()
-    p.run()
-    p.output()
+    program = Main()
+    program.run()
+    program.output()
