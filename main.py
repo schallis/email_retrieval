@@ -25,7 +25,11 @@ __author__ = 'Steve Challis'
 import re
 import sys
 import logging
+from collections import defaultdict
+from gettext import gettext as _
 from optparse import OptionParser, make_option
+
+from lxml.html import parse
 
 
 LOGGER = logging.getLogger(__name__)
@@ -47,24 +51,30 @@ class Main(object):
     def __init__(self):
         """Setup our program based upon the command line arguments"""
 
+        self.options = self.parse_args()
+        self.matches = []
+
+        if not self.options.quiet:
+            handler = logging.StreamHandler(sys.stdout)
+            LOGGER.setLevel(logging.DEBUG)
+            LOGGER.addHandler(handler)
+            LOGGER.debug(_('Using verbose mode'))
+
+    def parse_args(self):
         option_list = [
-            make_option("-v", "--verbose", action="store_true", dest="verbose"),
+            make_option("-q", "--quiet", action="store_true", dest="quiet"),
+            make_option("-s", "--stdin", action="store_true", dest="stdin"),
             make_option("-f", "--file", action="store", type="string", dest="file"),
             make_option("-u", "--url", action="store", type="string", dest="url"),
             make_option("-o", "--output", action="store", type="string", dest="output"),
         ]
         parser = OptionParser(option_list=option_list)
-        self.options, args = parser.parse_args()
-        self.matches = []
-
-        if self.options.verbose:
-            handler = logging.StreamHandler(sys.stdout)
-            LOGGER.setLevel(logging.DEBUG)
-            LOGGER.addHandler(handler)
-            LOGGER.debug('Using verbose mode')
+        options, __ = parser.parse_args()
+        return options
 
     def output(self):
         """Display or write matches to file"""
+        print _("Found matches")
         if self.options.output:
             with open(self.output, 'w') as out_file:
                 output.writelines(self.matches)
@@ -75,15 +85,32 @@ class Main(object):
         """Get the party started"""
 
         if self.options.file:
-            file = self.options.file
-            LOGGER.debug('Reading from file {0}'.format(file))
-            with open(file) as f:
+            infile = self.options.file
+            LOGGER.debug(_('Reading from file {0}...').format(infile))
+            with open(infile) as f:
                 for line in f:
                     self.matches.extend(find_emails(line))
+        if self.options.url:
+            # TODO: cleanup url (add slashes, protocol)
+            url = self.options.url
+            LOGGER.debug(_('Reading from url {0}...').format(url))
+            root = parse(url).getroot()
+            if root:
+                text = root.text_content()
+            else:
+                raise Exception(_('Bad URL, cannot find document root'))
+            self.matches.extend(find_emails(text))
+        elif self.options.stdin:
+            LOGGER.debug(_('Reading from stdin...'))
+            with sys.stdin as infile:
+                for line in infile:
+                    self.matches.extend(find_emails(line))
+        else:
+            raise Exception(_('No input method specified'))
 
-        if self.matches:
-            self.output()
 
 if __name__ == '__main__':
     p = Main()
+    p.parse_args()
     p.run()
+    p.output()
