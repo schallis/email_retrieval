@@ -48,44 +48,68 @@ def find_emails(text, multiline=False):
 
 class Main(object):
 
-    def __init__(self):
+    def __init__(self, test=False):
         """Setup our program based upon the command line arguments"""
 
+        self.test = test
         self.options = self.parse_args()
         self.matches = []
 
-        if not self.options.quiet:
+        if not self.options.quiet and not self.test:
             handler = logging.StreamHandler(sys.stdout)
             LOGGER.setLevel(logging.DEBUG)
             LOGGER.addHandler(handler)
             LOGGER.debug(_('Using verbose mode'))
 
     def parse_args(self):
+        """Build a list of options based on user input and return them"""
+
         option_list = [
             make_option("-q", "--quiet", action="store_true", dest="quiet"),
             make_option("-s", "--stdin", action="store_true", dest="stdin"),
-            make_option("-f", "--file", action="store", type="string", dest="file"),
+            make_option("-f", "--file", action="store", type="string", dest="path"),
             make_option("-u", "--url", action="store", type="string", dest="url"),
             make_option("-o", "--output", action="store", type="string", dest="output"),
         ]
         parser = OptionParser(option_list=option_list)
         options, __ = parser.parse_args()
+
         return options
 
     def output(self):
         """Display or write matches to file"""
+
+        matches = self.get_matches()
+        if not matches:
+            print _('No matches found')
+            sys.exit(1)
         print _("Found matches")
+
         if self.options.output:
             with open(self.output, 'w') as out_file:
-                output.writelines(self.matches)
+                output.writelines(matches)
         else:
-            print self.matches
+            print matches
+
+    def get_matches(self):
+        """Return the list of matched emails as a list"""
+
+        return self.matches
+
+    def read_from_stdin(self):
+        """Read, parse and return any found emails from stdin"""
+
+        matches = []
+        with sys.stdin as infile:
+            for line in infile:
+                matches.extend(find_emails(line))
+        return matches
 
     def run(self):
         """Get the party started"""
 
-        if self.options.file:
-            infile = self.options.file
+        if self.options.path:
+            infile = self.options.path
             LOGGER.debug(_('Reading from file {0}...').format(infile))
             with open(infile) as f:
                 for line in f:
@@ -102,15 +126,12 @@ class Main(object):
             self.matches.extend(find_emails(text))
         elif self.options.stdin:
             LOGGER.debug(_('Reading from stdin...'))
-            with sys.stdin as infile:
-                for line in infile:
-                    self.matches.extend(find_emails(line))
-        else:
+            self.matches.extend(self.read_from_stdin())
+        elif not self.test:
             raise Exception(_('No input method specified'))
 
 
 if __name__ == '__main__':
     p = Main()
-    p.parse_args()
     p.run()
     p.output()
