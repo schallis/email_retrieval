@@ -100,5 +100,23 @@ class EmailParseTest(unittest.TestCase):
         eq_(file_patch.call_count, 1)
         eq_(file_patch.call_args, call('test_path'))
 
+    @patch('main.Main.get_matches')
+    @patch('main.Main.write_to_file')
+    @patch('main.Main.parse_args')
+    def test_output(self, parse_args, write_patch, get_matches):
+        emails = ['test@test.com']
+        get_matches.return_value = emails
+        write_patch.return_value = emails
+        options = self.test_options
+        options.output = 'test_output'
+        parse_args.return_value = options
+
+        program = Main(test=True)
+        program.run()
+        program.output()
+
+        eq_(write_patch.call_count, 1)
+        eq_(write_patch.call_args, call('test_output', emails))
+
 if __name__ == '__main__':
     unittest.main()

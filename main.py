@@ -76,6 +76,14 @@ class Main(object):
 
         return options
 
+    def write_to_file(self, outfile, matches):
+        try:
+            with open(outfile, 'w') as output:
+                output.write('\n'.join(matches))
+        except IOError:
+            LOGGER.error(_('Invalid output file specified'))
+
+
     def output(self):
         """Display or write matches to file"""
 
@@ -83,11 +91,11 @@ class Main(object):
         if not matches:
             print _('No matches found')
             sys.exit(1)
-        print _("Found matches")
+        print _("Found {0} matches".format(len(matches)))
 
         if self.options.output:
-            with open(self.output, 'w') as out_file:
-                output.writelines(matches)
+            outfile = self.options.output
+            self.write_to_file(outfile, matches)
         else:
             print matches
 
@@ -109,11 +117,16 @@ class Main(object):
         """Read, parse and return any found emails from `url`"""
 
         # TODO: cleanup url (add slashes, protocol)
-        root = parse(url).getroot()
+        try:
+            root = parse(url).getroot()
+        except IOError:
+            LOGGER.error(_('Unable to parse input URL'))
+            sys.exit(1)
         if root is not None:
             text = root.text_content()
         else:
-            raise Exception(_('Bad URL, cannot find document root'))
+            LOGGER.error(_('Bad URL, cannot find document root'))
+            sys.exit(1)
 
         return find_emails(text)
 
@@ -121,9 +134,14 @@ class Main(object):
         """Read, parse and return any found emails from `infile`"""
 
         matches = []
-        with open(infile) as f:
-            for line in f:
-                self.matches.extend(find_emails(line))
+        try:
+            with open(infile) as f:
+                for line in f:
+                    self.matches.extend(find_emails(line))
+        except IOError:
+            LOGGER.error(_('Unable to read file'))
+            sys.exit(1)
+
 
         return matches
 
@@ -134,7 +152,7 @@ class Main(object):
             infile = self.options.path
             LOGGER.debug(_('Reading from file {0}...').format(infile))
             self.matches.extend(self.read_from_file(infile))
-        if self.options.url:
+        elif self.options.url:
             url = self.options.url
             LOGGER.debug(_('Reading from url {0}...').format(url))
             self.matches.extend(self.read_from_url(url))
@@ -142,7 +160,7 @@ class Main(object):
             LOGGER.debug(_('Reading from stdin...'))
             self.matches.extend(self.read_from_stdin())
         elif not self.test:
-            print _('No input method specified')
+            LOGGER.error(_('No input method specified'))
             sys.exit(1)
 
 
