@@ -23,12 +23,9 @@
 __author__ = 'Steve Challis'
 
 import re
-import os
 import sys
 import logging
 from optparse import OptionParser, make_option
-
-from lxml.html import parse
 
 
 LOGGER = logging.getLogger(__name__)
@@ -66,9 +63,26 @@ class Main(object):
             LOGGER.addHandler(handler)
             LOGGER.debug('Using verbose mode')
 
+    def output(self):
+        """Display or write matches to file"""
+        if self.options.output:
+            with open(self.output, 'w') as out_file:
+                output.writelines(self.matches)
+        else:
+            print self.matches
+
     def run(self):
         """Get the party started"""
-        pass
+
+        if self.options.file:
+            file = self.options.file
+            LOGGER.debug('Reading from file {0}'.format(file))
+            with open(file) as f:
+                for line in f:
+                    self.matches.extend(find_emails(line))
+
+        if self.matches:
+            self.output()
 
 if __name__ == '__main__':
     p = Main()
