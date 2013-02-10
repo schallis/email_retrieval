@@ -10,9 +10,9 @@ Email Parser
 Installation and Usage
 ======================
 
-The application can be run with::
+The application can be run with (from stdin)::
 
-    ./main.py [options] < "My email is steve@stevechallis.com"
+    echo "My email is steve@stevechallis.com" | ./main.py --stdin
 
 A list of optional arguments can be found by running::
 
