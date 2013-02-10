@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from mock import Mock, patch
+from mock import Mock, patch, call
 import unittest
 from nose.tools import eq_
 
@@ -67,6 +67,22 @@ class EmailParseTest(unittest.TestCase):
 
         eq_(program.get_matches(), emails)
         eq_(stdin_patch.call_count, 1)
+
+    @patch('main.Main.read_from_url')
+    @patch('main.Main.parse_args')
+    def test_url(self, parse_args, url_patch):
+        emails = ['test@test.com']
+        url_patch.return_value = emails
+        options = self.test_options
+        options.url = 'test_url'
+        parse_args.return_value = options
+
+        program = Main(test=True)
+        program.run()
+
+        eq_(program.get_matches(), emails)
+        eq_(url_patch.call_count, 1)
+        eq_(url_patch.call_args, call('test_url'))
 
 if __name__ == '__main__':
     unittest.main()

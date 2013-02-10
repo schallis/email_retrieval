@@ -105,6 +105,18 @@ class Main(object):
                 matches.extend(find_emails(line))
         return matches
 
+    def read_from_url(self, url):
+        """Read, parse and return any found emails from `url`"""
+
+        # TODO: cleanup url (add slashes, protocol)
+        root = parse(url).getroot()
+        if root is not None:
+            text = root.text_content()
+        else:
+            raise Exception(_('Bad URL, cannot find document root'))
+
+        return find_emails(text)
+
     def run(self):
         """Get the party started"""
 
@@ -115,15 +127,9 @@ class Main(object):
                 for line in f:
                     self.matches.extend(find_emails(line))
         if self.options.url:
-            # TODO: cleanup url (add slashes, protocol)
             url = self.options.url
             LOGGER.debug(_('Reading from url {0}...').format(url))
-            root = parse(url).getroot()
-            if root:
-                text = root.text_content()
-            else:
-                raise Exception(_('Bad URL, cannot find document root'))
-            self.matches.extend(find_emails(text))
+            self.matches.extend(self.read_from_url(url))
         elif self.options.stdin:
             LOGGER.debug(_('Reading from stdin...'))
             self.matches.extend(self.read_from_stdin())
