@@ -117,15 +117,23 @@ class Main(object):
 
         return find_emails(text)
 
+    def read_from_file(self, infile):
+        """Read, parse and return any found emails from `infile`"""
+
+        matches = []
+        with open(infile) as f:
+            for line in f:
+                self.matches.extend(find_emails(line))
+
+        return matches
+
     def run(self):
         """Get the party started"""
 
         if self.options.path:
             infile = self.options.path
             LOGGER.debug(_('Reading from file {0}...').format(infile))
-            with open(infile) as f:
-                for line in f:
-                    self.matches.extend(find_emails(line))
+            self.matches.extend(self.read_from_file(infile))
         if self.options.url:
             url = self.options.url
             LOGGER.debug(_('Reading from url {0}...').format(url))
@@ -134,7 +142,8 @@ class Main(object):
             LOGGER.debug(_('Reading from stdin...'))
             self.matches.extend(self.read_from_stdin())
         elif not self.test:
-            raise Exception(_('No input method specified'))
+            print _('No input method specified')
+            sys.exit(1)
 
 
 if __name__ == '__main__':

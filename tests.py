@@ -84,5 +84,21 @@ class EmailParseTest(unittest.TestCase):
         eq_(url_patch.call_count, 1)
         eq_(url_patch.call_args, call('test_url'))
 
+    @patch('main.Main.read_from_file')
+    @patch('main.Main.parse_args')
+    def test_url(self, parse_args, file_patch):
+        emails = ['test@test.com']
+        file_patch.return_value = emails
+        options = self.test_options
+        options.path = 'test_path'
+        parse_args.return_value = options
+
+        program = Main(test=True)
+        program.run()
+
+        eq_(program.get_matches(), emails)
+        eq_(file_patch.call_count, 1)
+        eq_(file_patch.call_args, call('test_path'))
+
 if __name__ == '__main__':
     unittest.main()
